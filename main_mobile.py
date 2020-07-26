@@ -14,13 +14,14 @@ Outputs: serialized GRPC packet (defined in network/data_packet)
 import sys
 import os
 import numpy as np
-import logging 
+import logging
 from time import time, sleep
 from multiprocessing import Process
 from threading import Thread
 
 import config.const_mobile as const
 from network.data_reader import DataReader
+from network.data_reader_image import DataReaderIMG
 from network.data_writer import DataWriter
 from network.socket_client import NetClient
 from network.data_packet import DataPkt
@@ -39,15 +40,15 @@ print('Output to {}'.format(RES_FOLDER))
 Main function
 """
 def main(running):
-    reader = DataReader(video_path=const.VIDEO_PATH,
+    reader = DataReaderIMG(img_path="/Users/allenzhu/Desktop/Research/Video/Wildtrack_dataset/Image_subsets/C1",
                         file_path='',
                         max_frame_id=const.MAX_FRAME_ID)
 
-    detector = None 
+    detector = None
     if const.OBJ_MODEL == 'mobilenet':
         from mobile.object_detector_tf import TFDetector
         detector = TFDetector(
-            graph_path=const.OBJ_MODEL_PATH, 
+            graph_path=const.OBJ_MODEL_PATH,
             label_file=const.OBJ_LABEL_FILE,
         )
     elif const.OBJ_MODEL == 'mrcnn':
@@ -82,14 +83,15 @@ def main(running):
 
     timer1 = time()
     timer2 = time()
+    count = 0
     time_gap = float(const.OBJ_BATCH_SIZE) / float(const.UPLOAD_FPS)
 
     while running[0]:
         img, frame_id, meta = reader.get_data()
         if not len(img):
             break
-
-        # Print frame id and FPS every 20 frames 
+        
+        # Print frame id and FPS every 20 frames
         if not frame_id % const.OBJ_BATCH_SIZE:
             print('frame {}, avg FPS {}'.format(
                     frame_id,
@@ -100,49 +102,50 @@ def main(running):
 
         frame_cache.append(img)
         frame_id_cache.append(frame_id)
-        if len(frame_cache) < const.OBJ_BATCH_SIZE:
-            continue
+        # if len(frame_cache) < const.OBJ_BATCH_SIZE:
+        #     continue
 
         boxes, scores, classes = detector.detect_images(
             np.stack(frame_cache, axis=0)
         )
 
         H, W, _ = img.shape
-        for i in range(const.OBJ_BATCH_SIZE):
-            meta = []
-            for j in range(len(boxes[i])):
-                if scores[i][j] < const.OBJ_THRES:
-                    continue
-                b = boxes[i][j]
-                meta.append({'box': [int(b[1]*W), int(b[0]*H),
-                                    int(b[3]*W), int(b[2]*H)],
-                            'label': classes[i][j],
-                            'score': scores[i][j]})
-
-            pkt = DataPkt(
-                img=frame_cache[i], 
-                cam_id=const.CLIENT_NAME,
-                frame_id=frame_id_cache[i], 
-                meta=meta,
+        # for i in range(const.OBJ_BATCH_SIZE):
+        meta = []
+        for j in range(len(boxes[0])):
+            if scores[0][j] < const.OBJ_THRES:
+                continue
+            b = boxes[0][j]
+            meta.append({'box': [int(b[1]*W), int(b[0]*H),
+                                int(b[3]*W), int(b[2]*H)],
+                        'label': classes[0][j],
+                        'score': scores[0][j]})
+        # print(meta)
+        pkt = DataPkt(
+            img=frame_cache[0],
+            cam_id=const.CLIENT_NAME,
+            frame_id=frame_id_cache[0],
+            meta=meta,
+        )
+        #     #
+        #     if const.UPLOAD_DATA:
+        #         uploader.send_data(pkt)
+        #     #
+        if const.SAVE_DATA:
+            data_saver.save_data(
+                frame_id=pkt.frame_id,
+                meta=pkt.meta,
             )
-
-            if const.UPLOAD_DATA:
-                uploader.send_data(pkt)
-
-            if const.SAVE_DATA:
-                data_saver.save_data(
-                    frame_id=pkt.frame_id, 
-                    meta=pkt.meta,
-                )
-
-        time_past = time() - timer2
-        sleep_time = max(0, time_gap - time_past)
-        sleep(sleep_time)
-        timer2 = time()
-
-        frame_cache = []
-        frame_id_cache = []
-
+        count += 1
+        print(count)
+        # time_past = time() - timer2
+        # sleep_time = max(0, time_gap - time_past)
+        # sleep(sleep_time)
+        # timer2 = time()
+        #
+        # frame_cache = []
+        # frame_id_cache = []
+    #
     if const.SAVE_DATA:
         data_saver.save_to_file()
 
@@ -154,12 +157,13 @@ if __name__ == '__main__':
                         filemode='w',
                         level=logging.DEBUG)
     running = [True]
-    th = Thread(target=main, args=(running,))
-    th.start()
-    while True:
-        try:
-            sleep(10)
-        except (KeyboardInterrupt, SystemExit):
-            running[0] = False
-            break
-    print('done')
+    main(running)
+    # th = Thread(target=main, args=(running,))
+    # th.start()
+    # while True:
+    #     try:
+    #         sleep(10)
+    #     except (KeyboardInterrupt, SystemExit):
+    #         running[0] = False
+    #         break
+    # print('done')

@@ -3,7 +3,7 @@ import cv2
 import numpy as np
 import sys
 from time import time
-import logging 
+import logging
 
 
 class DataReader:
