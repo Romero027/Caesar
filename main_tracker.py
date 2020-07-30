@@ -16,7 +16,7 @@ Outputs: serialized GRPC packet (defined in network/data_packet)
 
 ''' Preprocessing
 '''
-import logging 
+import logging
 import numpy as np
 import os
 import sys
@@ -43,7 +43,7 @@ if not os.path.exists(RES_FOLDER):
 print('Output to {}'.format(RES_FOLDER))
 
 
-""" 
+"""
 Main function
 """
 def main(running):
@@ -90,26 +90,31 @@ def main(running):
         cid = pkt.cam_id
         if cid not in trackers:
             trackers[cid] = DeepSort(
-                track_labels=const.TRACK_LABELS, 
+                track_labels=const.TRACK_LABELS,
                 attach_labels=const.ATTACH_LABELS
             )
             data_savers[cid] = DataWriter(
                 file_path=RES_FOLDER+'{}.npy'.format(cid)
             )
             print('create tracker for video {}'.format(cid))
-
+        print("Before")
         pkt = trackers[cid].update(pkt)
+        print("middle")
+        print(pkt)
         pkt = reid.update(pkt)
+        print("after")
+        print(pkt)
+        break
 
-        if const.UPLOAD_DATA:
-            client.send_data(pkt)
-
-        if const.SAVE_DATA:
-            data_savers[cid].save_data(frame_id=pkt.frame_id, meta=pkt.meta)
-
-    if const.SAVE_DATA:
-        for cid in data_savers:
-            data_savers[cid].save_to_file()
+    #     if const.UPLOAD_DATA:
+    #         client.send_data(pkt)
+    #
+    #     if const.SAVE_DATA:
+    #         data_savers[cid].save_data(frame_id=pkt.frame_id, meta=pkt.meta)
+    #
+    # if const.SAVE_DATA:
+    #     for cid in data_savers:
+    #         data_savers[cid].save_to_file()
 
     server.stop()
     print('tracker finished')

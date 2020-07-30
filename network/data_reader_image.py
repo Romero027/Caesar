@@ -19,7 +19,7 @@ class DataReaderIMG:
                         xxx means you can put whatever k-v entry
         '''
         if not os.path.exists(img_path):
-            print('Cannot find path: %s' % str(video_path))
+            print('Cannot find path: %s' % str(img_path))
             return
 
         self.data = []
@@ -47,13 +47,13 @@ class DataReaderIMG:
         - meta as a list
         '''
         if self.frame_id >= len(self.imgs):
-            return [], frame_id, []
+            return [], self.frame_id, "", []
 
         fid = self.frame_id
         frame = cv2.imread(self.imgs[fid])
         
         self.frame_id += 1
-        return frame, fid, []
+        return frame, fid, self.imgs[fid], []
 
 
     def log(self, s):

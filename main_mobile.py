@@ -133,7 +133,7 @@ def main(running):
         #     #
         if const.SAVE_DATA:
             data_saver.save_data(
-                frame_id=pkt.frame_id,
+                frame_id=frame_id,
                 meta=pkt.meta,
             )
         count += 1
