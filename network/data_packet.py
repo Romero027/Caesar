@@ -4,7 +4,7 @@ import numpy as np
 
 
 class DataPkt:
-    def __init__(self, img=None, cam_id='', frame_id=0, meta=[]):
+    def __init__(self, img=None, cam_id='', frame_id=0, frame_name="", meta=[]):
         ''' Pkt to be tranismitted between machines
 
         Args:
@@ -25,6 +25,7 @@ class DataPkt:
         self.cam_id = cam_id
         self.frame_id = frame_id
         self.meta = meta
+        self.frame_name = frame_name
 
     def encode_img(self, img):
         # return b64encode(cv2.imencode('.jpg', im)[1].tostring())
